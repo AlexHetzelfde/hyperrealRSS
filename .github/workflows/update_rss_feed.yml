@@ -46,7 +46,7 @@ jobs:
           python generate_rss.py
 
       # Stap 5b: Genereer tweede RSS feed
-      - name: Generate RSS feed (second)
+      - name: Generate RSS feed (extra)
         run: |
           python generate_rss2.py
 
@@ -55,6 +55,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add feed.xml feed2.xml
+          [ -f feed_main.xml ] && git add feed_main.xml
+          [ -f feed_extra.xml ] && git add feed_extra.xml
           git commit -m "Update both RSS feeds" || echo "No changes to commit"
           git push
