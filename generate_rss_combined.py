@@ -7,8 +7,8 @@ import time
 
 # Lijst van URLs
 urls = [
-    'https://zaanstad.bestuurlijkeinformatie.nl/Reports/Details/58e397b1-0b36-49e2-90ed-325405f27f72',  # Eerste link
-    'https://zaanstad.bestuurlijkeinformatie.nl/Reports/Details/8ea04074-52e6-4284-bd1a-66e378b40ec1'   # Tweede link
+    'https://zaanstad.bestuurlijkeinformatie.nl/Reports/Details/58e397b1-0b36-49e2-90ed-325405f27f72',  # Werkt
+    'https://zaanstad.bestuurlijkeinformatie.nl/Reports/Details/8ea04074-52e6-4284-bd1a-66e378b40ec1'   # Structuur verschilt
 ]
 
 # Configureer Chrome opties
@@ -25,47 +25,50 @@ ET.SubElement(channel, 'title').text = 'Zaanstad iBabs Gecombineerde RSS Feed'
 ET.SubElement(channel, 'link').text = urls[0]
 ET.SubElement(channel, 'description').text = 'Gecombineerde feed van meerdere Zaanstad stukken'
 
-# Filter op datum (2 dagen + vandaag)
+# Filter op datum (vandaag + 2 dagen terug)
 now = datetime.now()
 date_threshold = now - timedelta(days=2)
 
-# Functie om data van elke pagina te scrapen
+# Scrape-functie
 def scrape_url(url):
     driver.get(url)
-    time.sleep(5)  # Laat JS laden
-    html = driver.page_source
-    soup = BeautifulSoup(html, 'html.parser')
-
-    # Debug: opslaan van de HTML voor de tweede link
-    if url == urls[1]:
-        with open("debug_extra_page.html", "w", encoding="utf-8") as f:
-            f.write(soup.prettify())
+    time.sleep(5)  # Laat JavaScript laden
+    soup = BeautifulSoup(driver.page_source, 'html.parser')
 
     for row in soup.select('tbody tr'):
-        pub_date_element = row.select_one('td:nth-child(1) a')
-        if pub_date_element and pub_date_element.text:
-            try:
-                pub_date = datetime.strptime(pub_date_element.text.strip(), '%d-%m-%Y')
-                if pub_date.date() >= date_threshold.date():
-                    rss_item = ET.SubElement(channel, 'item')
-                    # Titel
-                    title_element = row.select_one('td:nth-child(2)')
-                    if title_element and title_element.text:
-                        ET.SubElement(rss_item, 'title').text = title_element.text.strip()
-                    # Link
-                    ET.SubElement(rss_item, 'link').text = 'https://zaanstad.bestuurlijkeinformatie.nl' + pub_date_element['href']
-                    # Beschrijving
-                    desc_element = row.select_one('td:nth-child(4)')
-                    if desc_element and desc_element.text:
-                        ET.SubElement(rss_item, 'description').text = desc_element.text.strip()
-                    # Datum
-                    ET.SubElement(rss_item, 'pubDate').text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
-                    # Unieke ID
-                    ET.SubElement(rss_item, 'guid').text = pub_date_element['href']
-            except ValueError:
-                print("Kon datum niet parsen:", pub_date_element.text)
+        cells = row.find_all('td')
+        link_element = row.select_one('a[href^="/Reports/Item/"]')
+        if not link_element or len(cells) < 3:
+            continue
 
-# Scrape beide URLs
+        href = link_element['href']
+        link_text = link_element.text.strip()
+
+        try:
+            # Structuur 1: link bevat datum
+            pub_date = datetime.strptime(link_text, '%d-%m-%Y')
+            if pub_date.date() >= date_threshold.date():
+                title = cells[1].text.strip() if len(cells) > 1 else 'Geen titel'
+                description = cells[3].text.strip() if len(cells) > 3 else ''
+        except ValueError:
+            # Structuur 2: datum staat elders
+            try:
+                pub_date = datetime.strptime(cells[2].text.strip(), '%d-%m-%Y')
+                if pub_date.date() >= date_threshold.date():
+                    title = link_text
+                    description = cells[4].text.strip() if len(cells) > 4 else ''
+            except ValueError:
+                continue  # Overslaan als geen datum te vinden is
+
+        # Voeg item toe aan RSS-feed
+        rss_item = ET.SubElement(channel, 'item')
+        ET.SubElement(rss_item, 'title').text = title
+        ET.SubElement(rss_item, 'link').text = 'https://zaanstad.bestuurlijkeinformatie.nl' + href
+        ET.SubElement(rss_item, 'description').text = description
+        ET.SubElement(rss_item, 'pubDate').text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+        ET.SubElement(rss_item, 'guid').text = href
+
+# Verwerk alle URLs
 for url in urls:
     scrape_url(url)
 
