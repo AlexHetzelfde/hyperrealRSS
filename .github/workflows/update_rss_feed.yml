@@ -40,22 +40,16 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # Stap 5a: Genereer eerste RSS feed
-      - name: Generate RSS feed (main)
+      # Stap 5: Genereer gecombineerde RSS feed
+      - name: Generate combined RSS feed
         run: |
-          python generate_rss.py
+          python generate_rss_combined.py
 
-      # Stap 5b: Genereer tweede RSS feed
-      - name: Generate RSS feed (extra)
-        run: |
-          python generate_rss2.py
-
-      # Stap 6: Commit en push beide RSS feeds
-      - name: Commit and push RSS feeds
+      # Stap 6: Commit en push de gecombineerde RSS feed
+      - name: Commit and push RSS feed
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          [ -f feed_main.xml ] && git add feed_main.xml
-          [ -f feed_extra.xml ] && git add feed_extra.xml
-          git commit -m "Update both RSS feeds" || echo "No changes to commit"
+          [ -f combined_feed.xml ] && git add combined_feed.xml
+          git commit -m "Update combined RSS feed" || echo "No changes to commit"
           git push
