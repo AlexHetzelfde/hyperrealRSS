@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # URL van de iBabs-pagina
 url = 'https://zaanstad.bestuurlijkeinformatie.nl/Reports/Details/58e397b1-0b36-49e2-90ed-325405f27f72'
@@ -22,29 +22,36 @@ link.text = url
 description = ET.SubElement(channel, 'description')
 description.text = 'RSS feed gegenereerd van iBabs pagina'
 
+# Bereken de datum van eergisteren
+date_threshold = datetime.now() - timedelta(days=2)
+
 # Voeg items toe aan de RSS-feed
 for row in soup.select('tbody tr'):
-    rss_item = ET.SubElement(channel, 'item')
-    
-    # Titel van het item
-    title_element = row.select_one('td:nth-child(7)')
-    if title_element:
-        item_title = ET.SubElement(rss_item, 'title')
-        item_title.text = title_element.text
-    
-    # Link van het item
-    item_link = ET.SubElement(rss_item, 'link')
-    item_link.text = url  # Gebruik de URL van de pagina als link
-    
-    # Beschrijving van het item
-    description_element = row.select_one('td:nth-child(4)')
-    if description_element:
-        item_description = ET.SubElement(rss_item, 'description')
-        item_description.text = description_element.text
-    
-    # Publicatiedatum van het item
-    item_pubDate = ET.SubElement(rss_item, 'pubDate')
-    item_pubDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    pub_date_element = row.select_one('td:nth-child(6)')
+    if pub_date_element:
+        pub_date = datetime.strptime(pub_date_element.text, '%d-%m-%Y')
+        if pub_date >= date_threshold:
+            rss_item = ET.SubElement(channel, 'item')
+            
+            # Titel van het item
+            title_element = row.select_one('td:nth-child(7)')
+            if title_element:
+                item_title = ET.SubElement(rss_item, 'title')
+                item_title.text = title_element.text
+            
+            # Link van het item
+            item_link = ET.SubElement(rss_item, 'link')
+            item_link.text = url  # Gebruik de URL van de pagina als link
+            
+            # Beschrijving van het item
+            description_element = row.select_one('td:nth-child(4)')
+            if description_element:
+                item_description = ET.SubElement(rss_item, 'description')
+                item_description.text = description_element.text
+            
+            # Publicatiedatum van het item
+            item_pubDate = ET.SubElement(rss_item, 'pubDate')
+            item_pubDate.text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
 
 # Schrijf de RSS-feed naar een bestand
 tree = ET.ElementTree(rss)
