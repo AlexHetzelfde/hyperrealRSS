@@ -18,18 +18,19 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Chrome 113
-        run: |
-          sudo apt-get update
-          wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_113.0.5672.92-1_amd64.deb
-          sudo apt install -y ./google-chrome-stable_113.0.5672.92-1_amd64.deb
+      - name: Install Google Chrome 100
+  run: |
+    sudo apt-get update
+    sudo apt-get install -y wget
+    wget https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_100.0.4896.127-1_amd64.deb
+    sudo apt install -y ./google-chrome-stable_100.0.4896.127-1_amd64.deb
 
-      - name: Install ChromeDriver 113
-        run: |
-          wget https://chromedriver.storage.googleapis.com/113.0.5672.63/chromedriver_linux64.zip
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
+- name: Install ChromeDriver 100
+  run: |
+    wget https://chromedriver.storage.googleapis.com/100.0.4896.60/chromedriver_linux64.zip
+    unzip chromedriver_linux64.zip
+    sudo mv chromedriver /usr/local/bin/
+    sudo chmod +x /usr/local/bin/chromedriver
 
       - name: Install Python dependencies
         run: |
