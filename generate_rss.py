@@ -37,6 +37,8 @@ ET.SubElement(channel, 'description').text = 'Automatisch gegenereerde feed van 
 date_threshold = datetime.now() - timedelta(days=2)
 current_day = datetime.now().date()
 
+items_added = 0  # Teller voor het aantal items in de feed
+
 for row in soup.select('tbody tr'):
     pub_date_element = row.select_one('td:nth-child(1) a')
     if pub_date_element and pub_date_element.text:
@@ -61,10 +63,17 @@ for row in soup.select('tbody tr'):
                 if desc_element and desc_element.text:
                     ET.SubElement(rss_item, 'description').text = desc_element.text.strip()
                 
-                # Datum
+                # Datum (pubDate moet goed in het juiste formaat zijn)
                 ET.SubElement(rss_item, 'pubDate').text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                
+                # Update de teller voor het aantal toegevoegde items
+                items_added += 1
         except ValueError:
             print("Datum kon niet gelezen worden:", pub_date_element.text)
+
+# Controleer of er items zijn toegevoegd
+if items_added == 0:
+    print("Er zijn geen items toegevoegd aan de feed, controleer de datums en de HTML van de pagina.")
 
 # Schrijf RSS naar bestand
 tree = ET.ElementTree(rss)
