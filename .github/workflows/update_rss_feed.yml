@@ -13,10 +13,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # Stap 2: Installeren van Google Chrome 100
+      # Stap 2: Installeren van Google Chrome 100 (Verwijder eerst de bestaande versie)
       - name: Install Google Chrome 100
         run: |
           sudo apt-get update
+          sudo apt-get remove -y google-chrome-stable  # Verwijder de bestaande versie
           sudo apt-get install -y wget
           wget https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_100.0.4896.127-1_amd64.deb
           sudo apt install -y ./google-chrome-stable_100.0.4896.127-1_amd64.deb
