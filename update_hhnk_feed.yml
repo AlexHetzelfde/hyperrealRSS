@@ -1,1 +1,49 @@
+name: Update HHNK RSS Feed
 
+on:
+  schedule:
+    - cron: '15 6 * * *'  # Elke dag om 06:15 UTC
+  workflow_dispatch:
+
+jobs:
+  update-hhnk-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install Google Chrome 100
+        run: |
+          sudo apt-get update
+          sudo apt-get remove -y google-chrome-stable
+          sudo apt-get install -y wget
+          wget https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_100.0.4896.127-1_amd64.deb
+          sudo apt install -y ./google-chrome-stable_100.0.4896.127-1_amd64.deb
+
+      - name: Install ChromeDriver 100
+        run: |
+          wget https://chromedriver.storage.googleapis.com/100.0.4896.60/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/local/bin/
+          sudo chmod +x /usr/local/bin/chromedriver
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Generate HHNK RSS feed
+        run: |
+          python generate_rss_hhnk.py
+
+      - name: Commit and push RSS feed
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          [ -f hhnk_feed.xml ] && git add hhnk_feed.xml
+          git commit -m "Update HHNK RSS feed" || echo "No changes to commit"
+          git push
