@@ -23,14 +23,14 @@ description = ET.SubElement(channel, 'description')
 description.text = 'RSS feed gegenereerd van iBabs pagina'
 
 # Voeg items toe aan de RSS-feed
-for item in soup.select('.item-selector'):  # Pas de selector aan op basis van de HTML-structuur van de pagina
+for row in soup.select('tbody tr'):
     rss_item = ET.SubElement(channel, 'item')
     item_title = ET.SubElement(rss_item, 'title')
-    item_title.text = item.select_one('.title-selector').text  # Pas de selector aan
+    item_title.text = row.select_one('td:nth-child(7)').text  # Titel van het item
     item_link = ET.SubElement(rss_item, 'link')
-    item_link.text = item.select_one('.link-selector')['href']  # Pas de selector aan
+    item_link.text = url  # Gebruik de URL van de pagina als link
     item_description = ET.SubElement(rss_item, 'description')
-    item_description.text = item.select_one('.description-selector').text  # Pas de selector aan
+    item_description.text = row.select_one('td:nth-child(4)').text  # Beschrijving van het item
     item_pubDate = ET.SubElement(rss_item, 'pubDate')
     item_pubDate.text = datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
 
