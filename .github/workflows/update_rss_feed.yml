@@ -17,7 +17,7 @@ jobs:
       - name: Install Google Chrome 100
         run: |
           sudo apt-get update
-          sudo apt-get remove -y google-chrome-stable  # Verwijder de bestaande versie
+          sudo apt-get remove -y google-chrome-stable
           sudo apt-get install -y wget
           wget https://mirror.cs.uchicago.edu/google-chrome/pool/main/g/google-chrome-stable/google-chrome-stable_100.0.4896.127-1_amd64.deb
           sudo apt install -y ./google-chrome-stable_100.0.4896.127-1_amd64.deb
@@ -40,16 +40,21 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      # Stap 5: RSS feed genereren via Python script
-      - name: Generate RSS feed
+      # Stap 5a: Genereer eerste RSS feed
+      - name: Generate RSS feed (main)
         run: |
           python generate_rss.py
 
-      # Stap 6: Commit en push de nieuwe RSS feed
-      - name: Commit and push RSS feed
+      # Stap 5b: Genereer tweede RSS feed
+      - name: Generate RSS feed (second)
+        run: |
+          python generate_rss2.py
+
+      # Stap 6: Commit en push beide RSS feeds
+      - name: Commit and push RSS feeds
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add feed.xml
-          git commit -m "Update RSS feed" || echo "No changes to commit"
+          git add feed.xml feed2.xml
+          git commit -m "Update both RSS feeds" || echo "No changes to commit"
           git push
