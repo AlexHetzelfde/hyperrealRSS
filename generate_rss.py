@@ -33,6 +33,9 @@ ET.SubElement(channel, 'title').text = 'Zaanstad iBabs RSS Feed'
 ET.SubElement(channel, 'link').text = url
 ET.SubElement(channel, 'description').text = 'Automatisch gegenereerde feed van Zaanstad stukken'
 
+# Voeg de atom:link voor de feed zelf toe (optioneel)
+ET.SubElement(channel, 'atom:link', rel='self', href=url)
+
 # Filter op datum (laatste 2 dagen + vandaag)
 date_threshold = datetime.now() - timedelta(days=2)
 current_day = datetime.now().date()
@@ -56,12 +59,18 @@ for row in soup.select('tbody tr'):
                     ET.SubElement(rss_item, 'title').text = title_element.text.strip()
                 
                 # Link
-                ET.SubElement(rss_item, 'link').text = 'https://zaanstad.bestuurlijkeinformatie.nl' + pub_date_element['href']
+                item_link = 'https://zaanstad.bestuurlijkeinformatie.nl' + pub_date_element['href']
+                ET.SubElement(rss_item, 'link').text = item_link
                 
-                # Beschrijving
+                # Voeg GUID toe (link als unieke identifier)
+                ET.SubElement(rss_item, 'guid').text = item_link
+                
+                # Beschrijving (vervang eventueel &amp; door &)
                 desc_element = row.select_one('td:nth-child(4)')
                 if desc_element and desc_element.text:
-                    ET.SubElement(rss_item, 'description').text = desc_element.text.strip()
+                    description = desc_element.text.strip()
+                    description = description.replace('&amp;', '&')  # Vervang HTML-entiteiten indien gewenst
+                    ET.SubElement(rss_item, 'description').text = description
                 
                 # Datum (pubDate moet goed in het juiste formaat zijn)
                 ET.SubElement(rss_item, 'pubDate').text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
@@ -74,6 +83,12 @@ for row in soup.select('tbody tr'):
 # Controleer of er items zijn toegevoegd
 if items_added == 0:
     print("Er zijn geen items toegevoegd aan de feed, controleer de datums en de HTML van de pagina.")
+else:
+    print(f"{items_added} items zijn toegevoegd aan de feed.")
+
+# Print de volledige XML om te debuggen
+xml_str = ET.tostring(rss, encoding='utf-8', method='xml').decode()
+print(xml_str)  # Print de volledige feed
 
 # Schrijf RSS naar bestand
 tree = ET.ElementTree(rss)
