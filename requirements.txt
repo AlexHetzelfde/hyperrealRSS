@@ -1,3 +1,2 @@
-feedgen
-requests
+selenium
 beautifulsoup4
