@@ -14,6 +14,6 @@ entry = fg.add_entry()
 entry.title("Voorbeelditem van Zaanstad")
 entry.link(href="https://zaanstad.bestuurlijkeinformatie.nl/")
 entry.description("Dit is een voorbeelditem")
-entry.pubDate(datetime.datetime.now())
+entry.pubDate(datetime.datetime.now(datetime.timezone.utc))
 
 fg.rss_file("rss.xml")
