@@ -27,10 +27,10 @@ date_threshold = datetime.now() - timedelta(days=2)
 
 # Voeg items toe aan de RSS-feed
 for row in soup.select('tbody tr'):
-    pub_date_element = row.select_one('td:nth-child(5)')
+    pub_date_element = row.select_one('td:nth-child(1) a')
     if pub_date_element and pub_date_element.text:
         try:
-            pub_date = datetime.strptime(pub_date_element.text, '%Y/%m/%d')
+            pub_date = datetime.strptime(pub_date_element.text, '%d-%m-%Y')
             if pub_date >= date_threshold:
                 rss_item = ET.SubElement(channel, 'item')
                 
@@ -42,7 +42,7 @@ for row in soup.select('tbody tr'):
                 
                 # Link van het item
                 item_link = ET.SubElement(rss_item, 'link')
-                item_link.text = url  # Gebruik de URL van de pagina als link
+                item_link.text = 'https://zaanstad.bestuurlijkeinformatie.nl' + pub_date_element['href']
                 
                 # Beschrijving van het item
                 description_element = row.select_one('td:nth-child(4)')
