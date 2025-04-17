@@ -1,31 +1,41 @@
-import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
+import time
+
+# Configureer headless Chrome
+options = Options()
+options.add_argument('--headless')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+driver = webdriver.Chrome(options=options)
 
 # URL van de iBabs-pagina
 url = 'https://zaanstad.bestuurlijkeinformatie.nl/Reports/Details/58e397b1-0b36-49e2-90ed-325405f27f72'
 
-# Haal de inhoud van de pagina op
-response = requests.get(url)
-soup = BeautifulSoup(response.content, 'html.parser')
+# Open de pagina met de headless browser
+driver.get(url)
+time.sleep(5)  # wacht even zodat JS zijn werk kan doen
 
-# Maak een nieuw RSS-feed element
+# Haal de volledige HTML op
+html = driver.page_source
+driver.quit()
+
+# Parse de HTML
+soup = BeautifulSoup(html, 'html.parser')
+
+# Maak RSS feed
 rss = ET.Element('rss', version='2.0')
 channel = ET.SubElement(rss, 'channel')
+ET.SubElement(channel, 'title').text = 'Zaanstad iBabs RSS Feed'
+ET.SubElement(channel, 'link').text = url
+ET.SubElement(channel, 'description').text = 'Automatisch gegenereerde feed van Zaanstad stukken'
 
-# Voeg kanaal informatie toe
-title = ET.SubElement(channel, 'title')
-title.text = 'iBabs RSS Feed'
-link = ET.SubElement(channel, 'link')
-link.text = url
-description = ET.SubElement(channel, 'description')
-description.text = 'RSS feed gegenereerd van iBabs pagina'
-
-# Bereken de datum van eergisteren
+# Filter op datum (bijvoorbeeld afgelopen 2 dagen)
 date_threshold = datetime.now() - timedelta(days=2)
 
-# Voeg items toe aan de RSS-feed
 for row in soup.select('tbody tr'):
     pub_date_element = row.select_one('td:nth-child(1) a')
     if pub_date_element and pub_date_element.text:
@@ -33,29 +43,21 @@ for row in soup.select('tbody tr'):
             pub_date = datetime.strptime(pub_date_element.text, '%d-%m-%Y')
             if pub_date >= date_threshold:
                 rss_item = ET.SubElement(channel, 'item')
-                
-                # Titel van het item
+                # Titel
                 title_element = row.select_one('td:nth-child(2)')
                 if title_element and title_element.text:
-                    item_title = ET.SubElement(rss_item, 'title')
-                    item_title.text = title_element.text
-                
-                # Link van het item
-                item_link = ET.SubElement(rss_item, 'link')
-                item_link.text = 'https://zaanstad.bestuurlijkeinformatie.nl' + pub_date_element['href']
-                
-                # Beschrijving van het item
-                description_element = row.select_one('td:nth-child(4)')
-                if description_element and description_element.text:
-                    item_description = ET.SubElement(rss_item, 'description')
-                    item_description.text = description_element.text
-                
-                # Publicatiedatum van het item
-                item_pubDate = ET.SubElement(rss_item, 'pubDate')
-                item_pubDate.text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                    ET.SubElement(rss_item, 'title').text = title_element.text.strip()
+                # Link
+                ET.SubElement(rss_item, 'link').text = 'https://zaanstad.bestuurlijkeinformatie.nl' + pub_date_element['href']
+                # Beschrijving
+                desc_element = row.select_one('td:nth-child(4)')
+                if desc_element and desc_element.text:
+                    ET.SubElement(rss_item, 'description').text = desc_element.text.strip()
+                # Datum
+                ET.SubElement(rss_item, 'pubDate').text = pub_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
         except ValueError:
-            print(f"Fout bij het parsen van de datum: {pub_date_element.text}")
+            print("Datum kon niet gelezen worden:", pub_date_element.text)
 
-# Schrijf de RSS-feed naar een bestand
+# Schrijf RSS naar bestand
 tree = ET.ElementTree(rss)
 tree.write('feed.xml', encoding='utf-8', xml_declaration=True)
